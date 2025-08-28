@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Variação da chuva acumulada por ano (2015 a 2024) - Fazenda Carnaúba - Taperoá - PB</title>
+  <style>
+    body {
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+    #main {
+      width: 100%;
+      height: 600px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin: 20px auto;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      gap: 15px;
+    }
+    .controls label {
+      font-size: 14px;
+      color: #333;
+    }
+    .controls input[type="number"] {
+      width: 80px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .controls button {
+      padding: 8px 15px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div class="controls">
+    <label for="min-variation">Variação Mínima (mm):</label>
+    <input type="number" id="min-variation" placeholder="e.g., -100">
+    <label for="max-variation">Variação Máxima (mm):</label>
+    <input type="number" id="max-variation" placeholder="e.g., 100">
+    <button onclick="applyFilter()">Filtrar</button>
+    <button onclick="resetFilter()">Limpar Filtro</button>
+  </div>
+  <div id="main"></div>
+
+  <script>
+    const data = [
+        {ano: 2013, total_chuva_mm: 280.0},
+        {ano: 2014, total_chuva_mm: 404.6},
+        {ano: 2015, total_chuva_mm: 386.7},
+        {ano: 2016, total_chuva_mm: 295.0},
+        {ano: 2017, total_chuva_mm: 211.5},
+        {ano: 2018, total_chuva_mm: 764.8},
+        {ano: 2019, total_chuva_mm: 497.9},
+        {ano: 2020, total_chuva_mm: 591.3},
+        {ano: 2021, total_chuva_mm: 388.5},
+        {ano: 2022, total_chuva_mm: 938.6},
+        {ano: 2023, total_chuva_mm: 465.6},
+        {ano: 2024, total_chuva_mm: 378.2},
+    ];
+
+    function calculateVariations(data) {
+      const variations = [];
+      for (let i = 1; i < data.length; i++) {
+        const currentYear = data[i].ano;
+        if (currentYear >= 2015 && currentYear <= 2024) {
+          const prevYearTotal = data[i-1].total_chuva_mm;
+          const currentYearTotal = data[i].total_chuva_mm;
+          const variation = currentYearTotal - prevYearTotal;
+          variations.push({
+            year: currentYear,
+            variation: variation.toFixed(1)
+          });
+        }
+      }
+      return variations;
+    }
+
+    const annualVariations = calculateVariations(data);
+    const years = annualVariations.map(d => d.year);
+    const variations = annualVariations.map(d => d.variation);
+
+    var chartDom = document.getElementById('main');
+    var myChart = echarts.init(chartDom);
+
+    function getOption(filteredYears, filteredVariations) {
+      return {
+        title: {
+          text: 'Variação da chuva acumulada por ano (2015 a 2024)',
+          subtext: 'Fazenda Carnaúba - Taperoá - PB',
+          left: 'center',
+          textStyle: {
+            color: '#333'
+          }
+        },
+        tooltip: {
+          trigger: 'axis',
+          formatter: function (params) {
+            const data = params[0];
+            const value = data.value;
+            const year = data.name;
+            const sign = value > 0 ? 'aumento' : 'diminuição';
+            const absValue = Math.abs(value);
+            return `
+              <b>${year}</b><br/>
+              Variação: ${value} mm<br/>
+              Em relação a ${year - 1} houve um <b>${sign}</b> de ${absValue.toFixed(1)} mm.
+            `;
+          },
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderColor: '#ddd',
+          borderWidth: 1,
+          textStyle: {
+            color: '#333'
+          }
+        },
+        toolbox: {
+          feature: {
+            dataZoom: { yAxisIndex: 'none' },
+            saveAsImage: {
+              name: 'variacao_chuva_carnauba',
+              title: 'Salvar como Imagem'
+            }
+          }
+        },
+        dataZoom: [
+          { type: 'inside' },
+          { type: 'slider' }
+        ],
+        xAxis: {
+          type: 'category',
+          data: filteredYears,
+          axisLabel: {
+            rotate: 45
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: 'Variação (mm)',
+          axisLabel: {
+            formatter: '{value} mm'
+          }
+        },
+        series: [{
+          name: 'Variação',
+          type: 'bar',
+          data: filteredVariations,
+          itemStyle: {
+            color: (params) => {
+              return params.value > 0 ? '#4CAF50' : '#F44336';
+            }
+          },
+          label: {
+            show: true,
+            position: 'top',
+            formatter: '{c} mm'
+          },
+          markLine: {
+            data: [
+              { type: 'average', name: 'Média' },
+              { yAxis: 0, name: 'Zero', lineStyle: { color: '#000', type: 'dashed' } }
+            ]
+          }
+        }]
+      };
+    }
+
+    myChart.setOption(getOption(years, variations));
+
+    function applyFilter() {
+      const minVal = document.getElementById('min-variation').value;
+      const maxVal = document.getElementById('max-variation').value;
+      const min = minVal !== '' ? parseFloat(minVal) : -Infinity;
+      const max = maxVal !== '' ? parseFloat(maxVal) : Infinity;
+
+      const filteredData = annualVariations.filter(d => d.variation >= min && d.variation <= max);
+      const filteredYears = filteredData.map(d => d.year);
+      const filteredVariations = filteredData.map(d => d.variation);
+      
+      myChart.setOption(getOption(filteredYears, filteredVariations), true);
+    }
+
+    function resetFilter() {
+      document.getElementById('min-variation').value = '';
+      document.getElementById('max-variation').value = '';
+      myChart.setOption(getOption(years, variations), true);
+    }
+  </script>
+</body>
+</html>
