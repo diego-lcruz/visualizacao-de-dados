@@ -1,1 +1,83 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Volume de chuva acumulada - Fazenda Carnaúba</title>
+  <style>
+    #main {
+      width: 100%;
+      height: 600px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div id="main"></div>
+
+  <script>
+    var chartDom = document.getElementById('main');
+    var myChart = echarts.init(chartDom, 'dark');
+
+    const anos = [
+      '2015','2016','2017','2018','2019',
+      '2020','2021','2022','2023','2024'
+    ];
+    const totais = [386.7,295.0,211.5,764.8,497.9,645.0,812.3,702.6,590.0,430.2];
+
+    var option = {
+      title: {
+        text: 'Volume de chuva acumulada por ano (2015–2024)',
+        subtext: 'Fazenda Carnaúba - Taperoá - PB',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      toolbox: {
+        feature: {
+          dataZoom: { yAxisIndex: 'none' },
+          saveAsImage: {}
+        }
+      },
+      dataZoom: [
+        { type: 'inside' },
+        { type: 'slider' }
+      ],
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: anos
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Chuva (mm)',
+        boundaryGap: [0, '30%']
+      },
+      series: [
+        {
+          type: 'line',
+          smooth: 0.6,
+          symbol: 'circle',
+          symbolSize: 10,
+          data: totais,
+          lineStyle: {
+            color: '#5470C6',
+            width: 4
+          },
+          markLine: {
+            symbol: ['none', 'none'],
+            label: { show: false },
+            data: [{ xAxis: 2 }, { xAxis: 4 }, { xAxis: 7 }, { xAxis: 9 }]
+          },
+          areaStyle: {
+            opacity: 0.3
+          }
+        }
+      ]
+    };
+
+    myChart.setOption(option);
+  </script>
+</body>
+</html>
