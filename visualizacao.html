@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Balança Comercial Brasil</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    body { margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    #map { flex: 2; }
+    #line { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="line"></div>
+
+  <script>
+    // Criação dos gráficos
+    const mapChart = echarts.init(document.getElementById('map'));
+    const lineChart = echarts.init(document.getElementById('line'));
+
+    // Carregar os dados
+    Promise.all([
+      fetch('world.json').then(res => res.json()),
+      fetch('BR-exportacoes_importacoes_2025.json').then(res => res.json())
+    ]).then(([world, dataset]) => {
+      echarts.registerMap('world', world);
+
+      const year = "1997"; // ano inicial
+      const balData = dataset["BAL"][year].map(d => ({
+        name: d.name,
+        value: d.us_value
+      }));
+
+      const mapOption = {
+        title: {
+          text: `Balança Comercial do Brasil (${year})`,
+          left: 'center'
+        },
+        tooltip: {
+          trigger: 'item',
+          formatter: p => `${p.name}<br/>BAL: ${p.value ? p.value.toLocaleString() : "N/A"} USD`
+        },
+        visualMap: {
+          min: -5000000000,
+          max: 5000000000,
+          legend:"Bilhões $",
+          realtime: true,
+          calculable: true,
+          inRange: {
+            color: ['#1a9850','#ffff00','#d73027'] // verde → amarelo → vermelho
+          }
+        },
+        series: [{
+          name: 'Balança Comercial',
+          type: 'map',
+          map: 'world',
+          roam: true,
+          emphasis: { label: { show: true } },
+          data: balData
+        }]
+      };
+      mapChart.setOption(mapOption);
+
+      // Configuração inicial do gráfico de linhas
+const lineOption = {
+  title: { text: 'Evolução Comercial (clique em um país)' },
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['Exportações', 'Importações', 'Balança'] },
+  xAxis: { type: 'category', data: [] },
+  yAxis: { type: 'value', name: 'Bilhões de US$' },
+  dataZoom: [
+    {
+      type: 'slider',
+      show: true,
+      xAxisIndex: [0],
+      start: 0,
+      end: 100
+    },
+    {
+      type: 'inside',
+      xAxisIndex: [0],
+      start: 0,
+      end: 100
+    }
+  ],
+  series: [
+    { name: 'Exportações', type: 'line', data: [] },
+    { name: 'Importações', type: 'line', data: [] },
+    { name: 'Balança', type: 'line', data: [] }
+  ]
+};
+      lineChart.setOption(lineOption);
+
+      // Clique no mapa atualiza gráfico de linhas
+      mapChart.on('click', function (params) {
+        const country = params.name;
+        const years = Object.keys(dataset["EXP"]);
+        const expSeries = years.map(y => {
+          const entry = dataset["EXP"][y].find(d => d.name === country);
+          return entry ? entry.us_value : 0;
+        });
+        const impSeries = years.map(y => {
+          const entry = dataset["IMP"][y].find(d => d.name === country);
+          return entry ? entry.us_value : 0;
+        });
+        const balSeries = years.map(y => {
+          const entry = dataset["BAL"][y].find(d => d.name === country);
+          return entry ? entry.us_value : 0;
+        });
+
+        lineChart.setOption({
+          title: { text: `Evolução Comercial - ${country}` },
+          xAxis: { data: years },
+          series: [
+            { name: 'Exportações', data: expSeries },
+            { name: 'Importações', data: impSeries },
+            { name: 'Balança', data: balSeries }
+          ]
+        });
+      });
+    });
+  </script>
+</body>
+</html>
